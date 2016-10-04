@@ -6,6 +6,7 @@ package libkbfs
 
 import (
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/tlf"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +19,7 @@ type journalBlockServer struct {
 var _ BlockServer = journalBlockServer{}
 
 func (j journalBlockServer) Get(
-	ctx context.Context, tlfID TlfID, id BlockID, context BlockContext) (
+	ctx context.Context, tlfID tlf.TlfID, id BlockID, context BlockContext) (
 	data []byte, serverHalf kbfscrypto.BlockCryptKeyServerHalf, err error) {
 	if tlfJournal, ok := j.jServer.getTLFJournal(tlfID); ok {
 		defer func() {
@@ -43,7 +44,7 @@ func (j journalBlockServer) Get(
 }
 
 func (j journalBlockServer) Put(
-	ctx context.Context, tlfID TlfID, id BlockID, context BlockContext,
+	ctx context.Context, tlfID tlf.TlfID, id BlockID, context BlockContext,
 	buf []byte, serverHalf kbfscrypto.BlockCryptKeyServerHalf) (err error) {
 	if tlfJournal, ok := j.jServer.getTLFJournal(tlfID); ok {
 		defer func() {
@@ -59,7 +60,7 @@ func (j journalBlockServer) Put(
 }
 
 func (j journalBlockServer) AddBlockReference(
-	ctx context.Context, tlfID TlfID, id BlockID,
+	ctx context.Context, tlfID tlf.TlfID, id BlockID,
 	context BlockContext) (err error) {
 	if tlfJournal, ok := j.jServer.getTLFJournal(tlfID); ok {
 		if !j.enableAddBlockReference {
@@ -84,7 +85,7 @@ func (j journalBlockServer) AddBlockReference(
 }
 
 func (j journalBlockServer) RemoveBlockReferences(
-	ctx context.Context, tlfID TlfID,
+	ctx context.Context, tlfID tlf.TlfID,
 	contexts map[BlockID][]BlockContext) (
 	liveCounts map[BlockID]int, err error) {
 	if tlfJournal, ok := j.jServer.getTLFJournal(tlfID); ok {
@@ -103,7 +104,7 @@ func (j journalBlockServer) RemoveBlockReferences(
 }
 
 func (j journalBlockServer) ArchiveBlockReferences(
-	ctx context.Context, tlfID TlfID,
+	ctx context.Context, tlfID tlf.TlfID,
 	contexts map[BlockID][]BlockContext) (err error) {
 	if tlfJournal, ok := j.jServer.getTLFJournal(tlfID); ok {
 		defer func() {

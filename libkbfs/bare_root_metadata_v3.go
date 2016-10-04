@@ -12,6 +12,7 @@ import (
 	"github.com/keybase/go-codec/codec"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/tlf"
 )
 
 // WriterMetadataV3 stores the metadata for a TLF that is
@@ -34,7 +35,7 @@ type WriterMetadataV3 struct {
 	LatestKeyGen KeyGen `codec:"lkg"`
 
 	// The directory ID, signed over to make verification easier
-	ID TlfID
+	ID tlf.TlfID
 	// The branch ID, currently only set if this is in unmerged per-device history.
 	BID BranchID
 	// Flags
@@ -129,7 +130,7 @@ func getKeyBundlesV3(extra ExtraMetadata) (
 }
 
 // TlfID implements the BareRootMetadata interface for BareRootMetadataV3.
-func (md *BareRootMetadataV3) TlfID() TlfID {
+func (md *BareRootMetadataV3) TlfID() tlf.TlfID {
 	return md.WriterMetadata.ID
 }
 
@@ -269,7 +270,7 @@ func (md *BareRootMetadataV3) IsReader(
 }
 
 // Update implements the MutableBareRootMetadata interface for BareRootMetadataV3.
-func (md *BareRootMetadataV3) Update(id TlfID, h BareTlfHandle) error {
+func (md *BareRootMetadataV3) Update(id tlf.TlfID, h BareTlfHandle) error {
 	if id.IsPublic() != h.IsPublic() {
 		return errors.New("TlfID and TlfHandle disagree on public status")
 	}
@@ -899,7 +900,7 @@ func (md *BareRootMetadataV3) SetWriters(writers []keybase1.UID) {
 }
 
 // SetTlfID implements the MutableBareRootMetadata interface for BareRootMetadataV3.
-func (md *BareRootMetadataV3) SetTlfID(tlf TlfID) {
+func (md *BareRootMetadataV3) SetTlfID(tlf tlf.TlfID) {
 	md.WriterMetadata.ID = tlf
 }
 

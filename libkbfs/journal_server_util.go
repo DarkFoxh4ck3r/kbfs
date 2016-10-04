@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"github.com/keybase/client/go/logger"
+	"github.com/keybase/kbfs/tlf"
 	"golang.org/x/net/context"
 )
 
@@ -24,7 +25,7 @@ func GetJournalServer(config Config) (*JournalServer, error) {
 
 // TLFJournalEnabled returns true if journaling is enabled for the
 // given TLF.
-func TLFJournalEnabled(config Config, tlfID TlfID) bool {
+func TLFJournalEnabled(config Config, tlfID tlf.TlfID) bool {
 	if jServer, err := GetJournalServer(config); err == nil {
 		_, err := jServer.JournalStatus(tlfID)
 		return err == nil
@@ -34,7 +35,7 @@ func TLFJournalEnabled(config Config, tlfID TlfID) bool {
 
 // WaitForTLFJournal waits for the corresponding journal to flush, if
 // one exists.
-func WaitForTLFJournal(ctx context.Context, config Config, tlfID TlfID,
+func WaitForTLFJournal(ctx context.Context, config Config, tlfID tlf.TlfID,
 	log logger.Logger) error {
 	if jServer, err := GetJournalServer(config); err == nil {
 		log.CDebugf(ctx, "Waiting for journal to flush")

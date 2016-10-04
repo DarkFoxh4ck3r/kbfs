@@ -18,6 +18,7 @@ import (
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfssync"
+	"github.com/keybase/kbfs/tlf"
 	"golang.org/x/net/context"
 )
 
@@ -124,7 +125,7 @@ type tlfJournalBWDelegate interface {
 type tlfJournal struct {
 	uid                 keybase1.UID
 	key                 kbfscrypto.VerifyingKey
-	tlfID               TlfID
+	tlfID               tlf.TlfID
 	dir                 string
 	config              tlfJournalConfig
 	delegateBlockServer BlockServer
@@ -171,27 +172,27 @@ func getTLFJournalInfoFilePath(dir string) string {
 type tlfJournalInfo struct {
 	UID          keybase1.UID
 	VerifyingKey kbfscrypto.VerifyingKey
-	TlfID        TlfID
+	TlfID        tlf.TlfID
 }
 
 func readTLFJournalInfoFile(dir string) (
-	keybase1.UID, kbfscrypto.VerifyingKey, TlfID, error) {
+	keybase1.UID, kbfscrypto.VerifyingKey, tlf.TlfID, error) {
 	infoJSON, err := ioutil.ReadFile(getTLFJournalInfoFilePath(dir))
 	if err != nil {
-		return keybase1.UID(""), kbfscrypto.VerifyingKey{}, TlfID{}, err
+		return keybase1.UID(""), kbfscrypto.VerifyingKey{}, tlf.TlfID{}, err
 	}
 
 	var info tlfJournalInfo
 	err = json.Unmarshal(infoJSON, &info)
 	if err != nil {
-		return keybase1.UID(""), kbfscrypto.VerifyingKey{}, TlfID{}, err
+		return keybase1.UID(""), kbfscrypto.VerifyingKey{}, tlf.TlfID{}, err
 	}
 
 	return info.UID, info.VerifyingKey, info.TlfID, nil
 }
 
 func writeTLFJournalInfoFile(dir string, uid keybase1.UID,
-	key kbfscrypto.VerifyingKey, tlfID TlfID) error {
+	key kbfscrypto.VerifyingKey, tlfID tlf.TlfID) error {
 	info := tlfJournalInfo{uid, key, tlfID}
 	infoJSON, err := json.Marshal(info)
 	if err != nil {
@@ -208,7 +209,7 @@ func writeTLFJournalInfoFile(dir string, uid keybase1.UID,
 
 func makeTLFJournal(
 	ctx context.Context, uid keybase1.UID, key kbfscrypto.VerifyingKey,
-	dir string, tlfID TlfID, config tlfJournalConfig,
+	dir string, tlfID tlf.TlfID, config tlfJournalConfig,
 	delegateBlockServer BlockServer, bws TLFJournalBackgroundWorkStatus,
 	bwDelegate tlfJournalBWDelegate, onBranchChange branchChangeListener,
 	onMDFlush mdFlushListener) (*tlfJournal, error) {
@@ -218,8 +219,8 @@ func makeTLFJournal(
 	if key == (kbfscrypto.VerifyingKey{}) {
 		return nil, errors.New("Empty verifying key")
 	}
-	if tlfID == (TlfID{}) {
-		return nil, errors.New("Empty TlfID")
+	if tlfID == (tlf.TlfID{}) {
+		return nil, errors.New("Empty tlf.TlfID")
 	}
 
 	readUID, readKey, readTlfID, err := readTLFJournalInfoFile(dir)

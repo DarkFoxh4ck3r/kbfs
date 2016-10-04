@@ -4,11 +4,13 @@
 
 package libkbfs
 
+import "github.com/keybase/kbfs/tlf"
+
 // This file contains test functions related to RootMetadata that need
 // to be exported for use by other modules' tests.
 
 // NewRootMetadataSignedForTest returns a new RootMetadataSigned for testing.
-func NewRootMetadataSignedForTest(id TlfID, h BareTlfHandle) (*RootMetadataSigned, error) {
+func NewRootMetadataSignedForTest(id tlf.TlfID, h BareTlfHandle) (*RootMetadataSigned, error) {
 	rmds := NewRootMetadataSigned()
 	err := rmds.MD.Update(id, h)
 	if err != nil {
