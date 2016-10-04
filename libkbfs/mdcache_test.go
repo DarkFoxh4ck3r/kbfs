@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/keybase/client/go/protocol/keybase1"
+	"github.com/keybase/kbfs/tlf"
 )
 
 func mdCacheInit(t *testing.T, cap int) (
@@ -28,7 +29,7 @@ func mdCacheShutdown(mockCtrl *gomock.Controller, config *ConfigMock) {
 	mockCtrl.Finish()
 }
 
-func testMdcachePut(t *testing.T, tlf TlfID, rev MetadataRevision,
+func testMdcachePut(t *testing.T, tlf tlf.TlfID, rev MetadataRevision,
 	mStatus MergeStatus, bid BranchID, h *TlfHandle, config *ConfigMock) {
 	rmd := &RootMetadata{
 		bareMd: &BareRootMetadataV2{
@@ -65,7 +66,7 @@ func TestMdcachePut(t *testing.T) {
 	mockCtrl, config := mdCacheInit(t, 100)
 	defer mdCacheShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h := parseTlfHandleOrBust(t, config, "alice", false)
 	h.resolvedWriters[keybase1.MakeTestUID(0)] = "test_user0"
 
@@ -76,13 +77,13 @@ func TestMdcachePutPastCapacity(t *testing.T) {
 	mockCtrl, config := mdCacheInit(t, 2)
 	defer mdCacheShutdown(mockCtrl, config)
 
-	id0 := FakeTlfID(1, false)
+	id0 := tlf.FakeTlfID(1, false)
 	h0 := parseTlfHandleOrBust(t, config, "alice", false)
 
-	id1 := FakeTlfID(2, false)
+	id1 := tlf.FakeTlfID(2, false)
 	h1 := parseTlfHandleOrBust(t, config, "alice,bob", false)
 
-	id2 := FakeTlfID(3, false)
+	id2 := tlf.FakeTlfID(3, false)
 	h2 := parseTlfHandleOrBust(t, config, "alice,charlie", false)
 
 	testMdcachePut(t, id0, 0, Merged, NullBranchID, h0, config)

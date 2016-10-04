@@ -13,6 +13,7 @@ import (
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 )
@@ -35,12 +36,12 @@ func keyManagerShutdown(mockCtrl *gomock.Controller, config *ConfigMock) {
 	mockCtrl.Finish()
 }
 
-func expectCachedGetTLFCryptKey(config *ConfigMock, tlfID TlfID, keyGen KeyGen) {
+func expectCachedGetTLFCryptKey(config *ConfigMock, tlfID tlf.TlfID, keyGen KeyGen) {
 	config.mockKcache.EXPECT().GetTLFCryptKey(tlfID, keyGen).Return(
 		kbfscrypto.TLFCryptKey{}, nil)
 }
 
-func expectUncachedGetTLFCryptKey(config *ConfigMock, tlfID TlfID, keyGen, currKeyGen KeyGen,
+func expectUncachedGetTLFCryptKey(config *ConfigMock, tlfID tlf.TlfID, keyGen, currKeyGen KeyGen,
 	uid keybase1.UID, subkey kbfscrypto.CryptPublicKey,
 	encrypt, storesHistoric bool) {
 	config.mockKcache.EXPECT().GetTLFCryptKey(tlfID, keyGen).
@@ -85,7 +86,7 @@ func expectUncachedGetTLFCryptKey(config *ConfigMock, tlfID TlfID, keyGen, currK
 }
 
 func expectUncachedGetTLFCryptKeyAnyDevice(
-	config *ConfigMock, tlfID TlfID, keyGen KeyGen, uid keybase1.UID,
+	config *ConfigMock, tlfID tlf.TlfID, keyGen KeyGen, uid keybase1.UID,
 	subkey kbfscrypto.CryptPublicKey, encrypt bool) {
 	config.mockKcache.EXPECT().GetTLFCryptKey(tlfID, keyGen).
 		Return(kbfscrypto.TLFCryptKey{}, KeyCacheMissError{})
@@ -164,7 +165,7 @@ func TestKeyManagerPublicTLFCryptKey(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, true)
+	id := tlf.FakeTlfID(1, true)
 	kmd := emptyKeyMetadata{id, 1}
 
 	tlfCryptKey, err := config.KeyManager().
@@ -205,7 +206,7 @@ func TestKeyManagerCachedSecretKeyForEncryptionSuccess(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	kmd := emptyKeyMetadata{id, 1}
 
 	expectCachedGetTLFCryptKey(config, id, 1)
@@ -220,7 +221,7 @@ func TestKeyManagerCachedSecretKeyForMDDecryptionSuccess(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	kmd := emptyKeyMetadata{id, 1}
 
 	expectCachedGetTLFCryptKey(config, id, 1)
@@ -235,7 +236,7 @@ func TestKeyManagerCachedSecretKeyForBlockDecryptionSuccess(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	kmd := emptyKeyMetadata{id, 2}
 
 	expectCachedGetTLFCryptKey(config, id, 1)
@@ -264,7 +265,7 @@ func TestKeyManagerUncachedSecretKeyForEncryptionSuccess(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h := parseTlfHandleOrBust(t, config, "alice", false)
 	uid := h.FirstResolvedWriter()
 	rmd := newRootMetadataOrBust(t, id, h)
@@ -287,7 +288,7 @@ func TestKeyManagerUncachedSecretKeyForMDDecryptionSuccess(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h := parseTlfHandleOrBust(t, config, "alice", false)
 	uid := h.FirstResolvedWriter()
 	rmd := newRootMetadataOrBust(t, id, h)
@@ -308,7 +309,7 @@ func TestKeyManagerUncachedSecretKeyForBlockDecryptionSuccess(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h := parseTlfHandleOrBust(t, config, "alice", false)
 	uid := h.FirstResolvedWriter()
 	rmd := newRootMetadataOrBust(t, id, h)
@@ -333,7 +334,7 @@ func TestKeyManagerRekeySuccessPrivate(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h := parseTlfHandleOrBust(t, config, "alice", false)
 	rmd := newRootMetadataOrBust(t, id, h)
 	oldKeyGen := rmd.LatestKeyGeneration()
@@ -351,7 +352,7 @@ func TestKeyManagerRekeyResolveAgainSuccessPublic(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, true)
+	id := tlf.FakeTlfID(1, true)
 	h, err := ParseTlfHandle(
 		ctx, config.KBPKI(), "alice,bob@twitter", true)
 	require.NoError(t, err)
@@ -390,7 +391,7 @@ func TestKeyManagerRekeyResolveAgainSuccessPublicSelf(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, true)
+	id := tlf.FakeTlfID(1, true)
 	h, err := ParseTlfHandle(
 		ctx, config.KBPKI(), "alice@twitter,bob,charlie@twitter", true)
 	require.NoError(t, err)
@@ -424,7 +425,7 @@ func TestKeyManagerRekeyResolveAgainSuccessPrivate(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h, err := ParseTlfHandle(
 		ctx, config.KBPKI(), "alice,bob@twitter,dave@twitter#charlie@twitter",
 		false)
@@ -495,7 +496,7 @@ func TestKeyManagerPromoteReaderSuccessPrivate(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h, err := ParseTlfHandle(ctx, config.KBPKI(),
 		"alice,bob@twitter#bob", false)
 	if err != nil {
@@ -529,7 +530,7 @@ func TestKeyManagerReaderRekeyResolveAgainSuccessPrivate(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h, err := ParseTlfHandle(ctx, config.KBPKI(),
 		"alice,dave@twitter#bob@twitter,charlie@twitter", false)
 	if err != nil {
@@ -600,7 +601,7 @@ func TestKeyManagerRekeyResolveAgainNoChangeSuccessPrivate(t *testing.T) {
 	mockCtrl, config, ctx := keyManagerInit(t)
 	defer keyManagerShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h, err := ParseTlfHandle(ctx, config.KBPKI(), "alice,bob,bob@twitter",
 		false)
 	if err != nil {

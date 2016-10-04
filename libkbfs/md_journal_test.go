@@ -17,6 +17,7 @@ import (
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,14 +38,14 @@ func getMDJournalLength(t *testing.T, j *mdJournal) int {
 }
 
 func setupMDJournalTest(t *testing.T) (
-	codec kbfscodec.Codec, crypto CryptoCommon, id TlfID,
+	codec kbfscodec.Codec, crypto CryptoCommon, id tlf.TlfID,
 	signer cryptoSigner, ekg singleEncryptionKeyGetter,
 	bsplit BlockSplitter, tempdir string, j *mdJournal) {
 	codec = kbfscodec.NewMsgpack()
 	crypto = MakeCryptoCommon(codec)
 
 	uid := keybase1.MakeTestUID(1)
-	id = FakeTlfID(1, false)
+	id = tlf.FakeTlfID(1, false)
 
 	signingKey := MakeFakeSigningKeyOrBust("fake seed")
 	signer = kbfscrypto.SigningKeySigner{Key: signingKey}
@@ -77,7 +78,7 @@ func teardownMDJournalTest(t *testing.T, tempdir string) {
 	assert.NoError(t, err)
 }
 
-func makeMDForTest(t *testing.T, tlfID TlfID, revision MetadataRevision,
+func makeMDForTest(t *testing.T, tlfID tlf.TlfID, revision MetadataRevision,
 	uid keybase1.UID, prevRoot MdID) *RootMetadata {
 	h, err := MakeBareTlfHandle([]keybase1.UID{uid}, nil, nil, nil, nil)
 	crypto := MakeCryptoCommon(kbfscodec.NewMsgpack())
@@ -92,7 +93,7 @@ func makeMDForTest(t *testing.T, tlfID TlfID, revision MetadataRevision,
 	return md
 }
 
-func putMDRange(t *testing.T, tlfID TlfID, signer cryptoSigner,
+func putMDRange(t *testing.T, tlfID tlf.TlfID, signer cryptoSigner,
 	ekg singleEncryptionKeyGetter, bsplit BlockSplitter,
 	firstRevision MetadataRevision, firstPrevRoot MdID, mdCount int,
 	j *mdJournal) MdID {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/keybase/kbfs/kbfscodec"
+	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/require"
 
 	"golang.org/x/net/context"
@@ -153,7 +154,7 @@ func testCRChainsFillInWriter(t *testing.T, rmds []*RootMetadata) (
 	immutableRmds := make([]ImmutableRootMetadata, len(rmds))
 	for i, rmd := range rmds {
 		rmd.SetLastModifyingWriter(uid)
-		rmd.SetTlfID(FakeTlfID(1, false))
+		rmd.SetTlfID(tlf.FakeTlfID(1, false))
 		immutableRmds[i] = MakeImmutableRootMetadata(rmd,
 			fakeMdID(1), time.Unix(0, 0))
 	}

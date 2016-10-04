@@ -9,12 +9,13 @@ import (
 
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
+	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/require"
 
 	"golang.org/x/net/context"
 )
 
-func makeRMDSForTest(t *testing.T, crypto cryptoPure, id TlfID,
+func makeRMDSForTest(t *testing.T, crypto cryptoPure, id tlf.TlfID,
 	h BareTlfHandle, revision MetadataRevision, uid keybase1.UID,
 	prevRoot MdID) *RootMetadataSigned {
 	rmds, err := NewRootMetadataSignedForTest(id, h)

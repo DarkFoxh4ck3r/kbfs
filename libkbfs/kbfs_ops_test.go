@@ -19,6 +19,7 @@ import (
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfshash"
+	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
@@ -149,7 +150,7 @@ func kbfsOpsInitNoMocks(t *testing.T, users ...libkb.NormalizedUsername) (
 	return config, currentUID, ctx
 }
 
-func checkBlockCache(t *testing.T, config *ConfigMock, id TlfID,
+func checkBlockCache(t *testing.T, config *ConfigMock, id tlf.TlfID,
 	expectedCleanBlocks []BlockID,
 	expectedDirtyBlocks map[BlockPointer]BranchName) {
 	bcache := config.BlockCache().(*BlockCacheStandard)
@@ -232,7 +233,7 @@ func TestKBFSOpsGetFavoritesFail(t *testing.T) {
 	}
 }
 
-func getOps(config Config, id TlfID) *folderBranchOps {
+func getOps(config Config, id tlf.TlfID) *folderBranchOps {
 	return config.KBFSOps().(*KBFSOpsStandard).
 		getOpsNoAdd(FolderBranch{id, MasterBranch})
 }
@@ -240,8 +241,8 @@ func getOps(config Config, id TlfID) *folderBranchOps {
 // createNewRMD creates a new RMD for the given name. Returns its ID
 // and handle also.
 func createNewRMD(t *testing.T, config Config, name string, public bool) (
-	TlfID, *TlfHandle, *RootMetadata) {
-	id := FakeTlfID(1, public)
+	tlf.TlfID, *TlfHandle, *RootMetadata) {
+	id := tlf.FakeTlfID(1, public)
 	h := parseTlfHandleOrBust(t, config, name, public)
 	rmd := newRootMetadataOrBust(t, id, h)
 	return id, h, rmd
@@ -250,7 +251,7 @@ func createNewRMD(t *testing.T, config Config, name string, public bool) (
 // injectNewRMD creates a new RMD and makes sure the existing ops for
 // its ID has as its head that RMD.
 func injectNewRMD(t *testing.T, config *ConfigMock) (
-	keybase1.UID, TlfID, *RootMetadata) {
+	keybase1.UID, tlf.TlfID, *RootMetadata) {
 	id, h, rmd := createNewRMD(t, config, "alice", false)
 	var keyGen KeyGen
 	if id.IsPublic() {
@@ -270,7 +271,7 @@ func injectNewRMD(t *testing.T, config *ConfigMock) (
 	rmd.FakeInitialRekey(config.Crypto(), h.ToBareHandleOrBust())
 
 	ops := getOps(config, id)
-	ops.head = MakeImmutableRootMetadata(rmd, fakeMdID(fakeTlfIDByte(id)),
+	ops.head = MakeImmutableRootMetadata(rmd, fakeMdID(tlf.FakeTlfIDByte(id)),
 		time.Now())
 	rmd.SetSerializedPrivateMetadata(make([]byte, 1))
 	config.Notifier().RegisterForChanges(
@@ -504,9 +505,9 @@ func TestKBFSOpsGetRootMDForHandleExisting(t *testing.T) {
 	}
 
 	config.mockMdops.EXPECT().GetForHandle(gomock.Any(), h, Unmerged).Return(
-		TlfID{}, ImmutableRootMetadata{}, nil)
+		tlf.TlfID{}, ImmutableRootMetadata{}, nil)
 	config.mockMdops.EXPECT().GetForHandle(gomock.Any(), h, Merged).Return(
-		TlfID{}, MakeImmutableRootMetadata(rmd, fakeMdID(1), time.Now()), nil)
+		tlf.TlfID{}, MakeImmutableRootMetadata(rmd, fakeMdID(1), time.Now()), nil)
 	ops := getOps(config, id)
 	assert.False(t, fboIdentityDone(ops))
 
@@ -600,7 +601,7 @@ func nodeFromPath(t *testing.T, ops *folderBranchOps, p path) Node {
 }
 
 func testPutBlockInCache(
-	t *testing.T, config *ConfigMock, ptr BlockPointer, id TlfID,
+	t *testing.T, config *ConfigMock, ptr BlockPointer, id tlf.TlfID,
 	block Block) {
 	err := config.BlockCache().Put(ptr, id, block, TransientEntry)
 	require.NoError(t, err)
@@ -663,7 +664,7 @@ func TestKBFSOpsGetBaseDirChildrenUncachedFailNonReader(t *testing.T) {
 	mockCtrl, config, ctx := kbfsOpsInit(t, false)
 	defer kbfsTestShutdown(mockCtrl, config)
 
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 
 	h := parseTlfHandleOrBust(t, config, "bob#alice", false)
 	// Hack around access check in ParseTlfHandle.
@@ -976,7 +977,7 @@ func (s shimMDOps) PutUnmerged(ctx context.Context, rmd *RootMetadata) (MdID, er
 
 func expectSyncBlockHelper(
 	t *testing.T, config *ConfigMock, lastCall *gomock.Call,
-	uid keybase1.UID, id TlfID, name string, p path, kmd KeyMetadata,
+	uid keybase1.UID, id tlf.TlfID, name string, p path, kmd KeyMetadata,
 	newEntry bool, skipSync int, refBytes uint64, unrefBytes uint64,
 	newRmd *ImmutableRootMetadata, newBlockIDs []BlockID, isUnmerged bool) (
 	path, *gomock.Call) {
@@ -1052,7 +1053,7 @@ func expectSyncBlockHelper(
 
 func expectSyncBlock(
 	t *testing.T, config *ConfigMock, lastCall *gomock.Call,
-	uid keybase1.UID, id TlfID, name string, p path, kmd KeyMetadata,
+	uid keybase1.UID, id tlf.TlfID, name string, p path, kmd KeyMetadata,
 	newEntry bool, skipSync int, refBytes uint64, unrefBytes uint64,
 	newRmd *ImmutableRootMetadata, newBlockIDs []BlockID) (path, *gomock.Call) {
 	return expectSyncBlockHelper(t, config, lastCall, uid, id, name, p, kmd,
@@ -1061,14 +1062,14 @@ func expectSyncBlock(
 
 func expectSyncBlockUnmerged(
 	t *testing.T, config *ConfigMock, lastCall *gomock.Call,
-	uid keybase1.UID, id TlfID, name string, p path, kmd KeyMetadata,
+	uid keybase1.UID, id tlf.TlfID, name string, p path, kmd KeyMetadata,
 	newEntry bool, skipSync int, refBytes uint64, unrefBytes uint64,
 	newRmd *ImmutableRootMetadata, newBlockIDs []BlockID) (path, *gomock.Call) {
 	return expectSyncBlockHelper(t, config, lastCall, uid, id, name, p, kmd,
 		newEntry, skipSync, refBytes, unrefBytes, newRmd, newBlockIDs, true)
 }
 
-func getBlockFromCache(t *testing.T, config Config, id TlfID, ptr BlockPointer,
+func getBlockFromCache(t *testing.T, config Config, id tlf.TlfID, ptr BlockPointer,
 	branch BranchName) Block {
 	if block, err := config.DirtyBlockCache().Get(id, ptr, branch); err == nil {
 		return block
@@ -1082,7 +1083,7 @@ func getBlockFromCache(t *testing.T, config Config, id TlfID, ptr BlockPointer,
 	return block
 }
 
-func getDirBlockFromCache(t *testing.T, config Config, id TlfID,
+func getDirBlockFromCache(t *testing.T, config Config, id tlf.TlfID,
 	ptr BlockPointer, branch BranchName) *DirBlock {
 	block := getBlockFromCache(t, config, id, ptr, branch)
 	dblock, ok := block.(*DirBlock)
@@ -1092,7 +1093,7 @@ func getDirBlockFromCache(t *testing.T, config Config, id TlfID,
 	return dblock
 }
 
-func getFileBlockFromCache(t *testing.T, config Config, id TlfID,
+func getFileBlockFromCache(t *testing.T, config Config, id tlf.TlfID,
 	ptr BlockPointer, branch BranchName) *FileBlock {
 	block := getBlockFromCache(t, config, id, ptr, branch)
 	fblock, ok := block.(*FileBlock)
@@ -1543,7 +1544,7 @@ func TestCreateLinkFailKBFSPrefix(t *testing.T) {
 // corresponding list of blocks. If n components are given, then the
 // path will have n+1 nodes (one extra for the root node), and there
 // will be n+1 corresponding blocks.
-func makeDirTree(id TlfID, uid keybase1.UID, components ...string) (
+func makeDirTree(id tlf.TlfID, uid keybase1.UID, components ...string) (
 	DirEntry, path, []*DirBlock) {
 	var idCounter byte = 0x10
 	makeBlockID := func() BlockID {
@@ -2662,11 +2663,11 @@ func TestRenameFailAcrossTopLevelFolders(t *testing.T) {
 	mockCtrl, config, ctx := kbfsOpsInit(t, false)
 	defer kbfsTestShutdown(mockCtrl, config)
 
-	id1 := FakeTlfID(1, false)
+	id1 := tlf.FakeTlfID(1, false)
 	h1 := parseTlfHandleOrBust(t, config, "alice,bob", false)
 	rmd1 := newRootMetadataOrBust(t, id1, h1)
 
-	id2 := FakeTlfID(2, false)
+	id2 := tlf.FakeTlfID(2, false)
 	h2 := parseTlfHandleOrBust(t, config, "alice,bob,charlie", false)
 	rmd2 := newRootMetadataOrBust(t, id1, h2)
 
@@ -2702,7 +2703,7 @@ func TestRenameFailAcrossBranches(t *testing.T) {
 	mockCtrl, config, ctx := kbfsOpsInit(t, false)
 	defer kbfsTestShutdown(mockCtrl, config)
 
-	id1 := FakeTlfID(1, false)
+	id1 := tlf.FakeTlfID(1, false)
 	h1 := parseTlfHandleOrBust(t, config, "alice,bob", false)
 	rmd1 := newRootMetadataOrBust(t, id1, h1)
 
@@ -4571,7 +4572,7 @@ func TestSyncDirtyDupBlockSuccess(t *testing.T) {
 
 func putAndCleanAnyBlock(config *ConfigMock, p path) {
 	config.mockBcache.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any(), TransientEntry).
-		Do(func(ptr BlockPointer, tlf TlfID, block Block, lifetime BlockCacheLifetime) {
+		Do(func(ptr BlockPointer, tlf tlf.TlfID, block Block, lifetime BlockCacheLifetime) {
 			config.mockDirtyBcache.EXPECT().
 				Get(gomock.Any(), ptrMatcher{BlockPointer{ID: ptr.ID}},
 					p.Branch).AnyTimes().Return(nil, NoSuchBlockError{ptr.ID})
@@ -4684,7 +4685,7 @@ func TestSyncDirtyMultiBlocksSplitInBlockSuccess(t *testing.T) {
 	var newBlock3 *FileBlock
 	config.mockDirtyBcache.EXPECT().Put(gomock.Any(),
 		fileBlock.IPtrs[2].BlockPointer, p.Branch, gomock.Any()).
-		Do(func(id TlfID, ptr BlockPointer, branch BranchName, block Block) {
+		Do(func(id tlf.TlfID, ptr BlockPointer, branch BranchName, block Block) {
 			newBlock3 = block.(*FileBlock)
 			// id3 syncs just fine
 			config.mockDirtyBcache.EXPECT().IsDirty(gomock.Any(),
@@ -4704,7 +4705,7 @@ func TestSyncDirtyMultiBlocksSplitInBlockSuccess(t *testing.T) {
 	config.mockCrypto.EXPECT().MakeTemporaryBlockID().Return(id5, nil)
 	config.mockDirtyBcache.EXPECT().Put(gomock.Any(),
 		ptrMatcher{BlockPointer{ID: id5}}, p.Branch, gomock.Any()).
-		Do(func(id TlfID, ptr BlockPointer, branch BranchName, block Block) {
+		Do(func(id tlf.TlfID, ptr BlockPointer, branch BranchName, block Block) {
 			newID5 = ptr.ID
 			newBlock5 = block.(*FileBlock)
 			// id5 syncs just fine
@@ -4903,7 +4904,7 @@ func TestSyncDirtyMultiBlocksCopyNextBlockSuccess(t *testing.T) {
 	var newBlock4 *FileBlock
 	config.mockDirtyBcache.EXPECT().Put(gomock.Any(),
 		fileBlock.IPtrs[3].BlockPointer, p.Branch, gomock.Any()).
-		Do(func(id TlfID, ptr BlockPointer, branch BranchName, block Block) {
+		Do(func(id tlf.TlfID, ptr BlockPointer, branch BranchName, block Block) {
 			newBlock4 = block.(*FileBlock)
 			// now block 4 is dirty, but it's the end of the line,
 			// so nothing else to do
@@ -5388,7 +5389,7 @@ type corruptBlockServer struct {
 }
 
 func (cbs corruptBlockServer) Get(
-	ctx context.Context, tlfID TlfID, id BlockID, context BlockContext) (
+	ctx context.Context, tlfID tlf.TlfID, id BlockID, context BlockContext) (
 	[]byte, kbfscrypto.BlockCryptKeyServerHalf, error) {
 	data, keyServerHalf, err := cbs.BlockServer.Get(ctx, tlfID, id, context)
 	if err != nil {
@@ -5451,10 +5452,10 @@ func TestKBFSOpsEmptyTlfSize(t *testing.T) {
 
 type cryptoFixedTlf struct {
 	Crypto
-	tlf TlfID
+	tlf tlf.TlfID
 }
 
-func (c cryptoFixedTlf) MakeRandomTlfID(isPublic bool) (TlfID, error) {
+func (c cryptoFixedTlf) MakeRandomTlfID(isPublic bool) (tlf.TlfID, error) {
 	return c.tlf, nil
 }
 

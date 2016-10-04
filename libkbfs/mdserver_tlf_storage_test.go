@@ -12,6 +12,7 @@ import (
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +44,7 @@ func TestMDServerTlfStorageBasic(t *testing.T) {
 	require.Equal(t, 0, getMDStorageLength(t, s, NullBranchID))
 
 	uid := keybase1.MakeTestUID(1)
-	id := FakeTlfID(1, false)
+	id := tlf.FakeTlfID(1, false)
 	h, err := MakeBareTlfHandle([]keybase1.UID{uid}, nil, nil, nil, nil)
 	require.NoError(t, err)
 

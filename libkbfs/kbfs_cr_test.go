@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/keybase/client/go/libkb"
+	"github.com/keybase/kbfs/tlf"
 	"golang.org/x/net/context"
 )
 
@@ -565,7 +566,7 @@ func TestBasicCRNoConflictWithUnembeddedBlockChanges(t *testing.T) {
 }
 
 type registerForUpdateRecord struct {
-	id       TlfID
+	id       tlf.TlfID
 	currHead MetadataRevision
 }
 
@@ -586,7 +587,7 @@ func newMDServerLocalRecordingRegisterForUpdate(mdServerRaw mdServerLocal) (
 
 func (md mdServerLocalRecordingRegisterForUpdate) RegisterForUpdate(
 	ctx context.Context,
-	id TlfID, currHead MetadataRevision) (<-chan error, error) {
+	id tlf.TlfID, currHead MetadataRevision) (<-chan error, error) {
 	md.ch <- registerForUpdateRecord{id: id, currHead: currHead}
 	return md.mdServerLocal.RegisterForUpdate(ctx, id, currHead)
 }
@@ -1097,7 +1098,7 @@ func TestCRDouble(t *testing.T) {
 }
 
 // Helper to block on rekey of a given folder.
-func waitForRekey(t *testing.T, config Config, id TlfID) {
+func waitForRekey(t *testing.T, config Config, id tlf.TlfID) {
 	rekeyCh := config.RekeyQueue().GetRekeyChannel(id)
 	if rekeyCh != nil {
 		// rekey in progress still
