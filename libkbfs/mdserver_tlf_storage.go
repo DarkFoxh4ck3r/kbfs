@@ -102,16 +102,12 @@ func (s *mdServerTlfStorage) mdPath(id MdID) string {
 // TODO: Verify signature?
 func (s *mdServerTlfStorage) getMDReadLocked(id MdID) (
 	*RootMetadataSigned, error) {
+	path := s.mdPath(id)
+
 	// Read file.
 
-	path := s.mdPath(id)
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
 	rmds := RootMetadataSigned{MD: &BareRootMetadataV2{}}
-	err = s.codec.Decode(data, &rmds)
+	err := deserializeFromFile(s.codec, path, &rmds)
 	if err != nil {
 		return nil, err
 	}
@@ -151,6 +147,21 @@ func serializeToFile(
 	}
 
 	err = ioutil.WriteFile(path, buf, 0600)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deserializeFromFile(
+	codec kbfscodec.Codec, path string, objPtr interface{}) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	err = codec.Decode(data, objPtr)
 	if err != nil {
 		return err
 	}
