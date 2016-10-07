@@ -81,6 +81,16 @@ func (s *mdServerTlfStorage) mdsPath() string {
 	return filepath.Join(s.dir, "mds")
 }
 
+func (s *mdServerTlfStorage) writerKeyBundleV3Path(
+	id TLFWriterKeyBundleID) string {
+	return filepath.Join(s.dir, "wkbv3", id.String())
+}
+
+func (s *mdServerTlfStorage) readerKeyBundleV3Path(
+	id TLFReaderKeyBundleID) string {
+	return filepath.Join(s.dir, "rkbv3", id.String())
+}
+
 func (s *mdServerTlfStorage) mdPath(id MdID) string {
 	idStr := id.String()
 	return filepath.Join(s.mdsPath(), idStr[:4], idStr[4:])
@@ -128,6 +138,26 @@ func (s *mdServerTlfStorage) getMDReadLocked(id MdID) (
 	return &rmds, nil
 }
 
+func serializeToFile(
+	codec kbfscodec.Codec, obj interface{}, path string) error {
+	err := os.MkdirAll(filepath.Dir(path), 0700)
+	if err != nil {
+		return err
+	}
+
+	buf, err := codec.Encode(obj)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(path, buf, 0600)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *mdServerTlfStorage) putMDLocked(rmds *RootMetadataSigned) (MdID, error) {
 	id, err := s.crypto.MakeMdID(rmds.MD)
 	if err != nil {
@@ -144,23 +174,10 @@ func (s *mdServerTlfStorage) putMDLocked(rmds *RootMetadataSigned) (MdID, error)
 		return id, nil
 	}
 
-	path := s.mdPath(id)
-
-	err = os.MkdirAll(filepath.Dir(path), 0700)
+	err = serializeToFile(s.codec, rmds, s.mdPath(id))
 	if err != nil {
 		return MdID{}, err
 	}
-
-	buf, err := s.codec.Encode(rmds)
-	if err != nil {
-		return MdID{}, err
-	}
-
-	err = ioutil.WriteFile(path, buf, 0600)
-	if err != nil {
-		return MdID{}, err
-	}
-
 	return id, nil
 }
 
@@ -282,11 +299,33 @@ func (s *mdServerTlfStorage) setExtraMetadataLocked(
 		return nil
 	}
 
-	_, ok := extra.(*ExtraMetadataV3)
+	wkbID := rmds.MD.GetTLFWriterKeyBundleID()
+	if wkbID == (TLFWriterKeyBundleID{}) {
+		panic("writer key bundle ID is empty")
+	}
+
+	rkbID := rmds.MD.GetTLFReaderKeyBundleID()
+	if rkbID == (TLFReaderKeyBundleID{}) {
+		panic("reader key bundle ID is empty")
+	}
+
+	extraV3, ok := extra.(*ExtraMetadataV3)
 	if !ok {
 		return errors.New("Invalid extra metadata")
 	}
-	panic("Not implemented")
+
+	err := serializeToFile(
+		s.codec, extraV3.wkb, s.writerKeyBundleV3Path(wkbID))
+	if err != nil {
+		return err
+	}
+
+	err = serializeToFile(
+		s.codec, extraV3.rkb, s.readerKeyBundleV3Path(rkbID))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
