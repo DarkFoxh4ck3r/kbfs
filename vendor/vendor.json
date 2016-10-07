@@ -513,6 +513,12 @@
 			"revisionTime": "2016-08-26T20:58:34Z"
 		},
 		{
+			"checksumSHA1": "S0DP7Pn7sZUmXc55IzZnNvERu6s=",
+			"path": "golang.org/x/sync/errgroup",
+			"revision": "1ae7c7b29e06598039be46c5083819ba6fd7a97e",
+			"revisionTime": "2016-10-04T22:49:57Z"
+		},
+		{
 			"path": "golang.org/x/sys/unix",
 			"revision": "833a04a10549a95dc34458c195cbad61bbb6cb4d",
 			"revisionTime": "2015-12-10T17:34:15-08:00"
